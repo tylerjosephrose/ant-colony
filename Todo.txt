@@ -1,4 +1,4 @@
-Make pheramones stronger if the ant has food
 make path back more direct if possible
+make lives of ants finite...they should starve if the hive does not have enough food
 add second colony of ants that are blue
 add second pheramone type (red) that indicates war
