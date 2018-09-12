@@ -10,7 +10,9 @@
 ;dimensions of square world
 (def dim 80)
 ;number of ants = nants-sqrt^2
-(def nants-sqrt 7)
+(def nants-green-sqrt 7)
+;number of blue ants
+(def nants-blue-sqrt 7)
 ;number of places with food
 (def food-places 35)
 ;range of amount of food at a place
@@ -20,7 +22,6 @@
 ;scale factor for food drawing
 (def food-scale 30.0)
 ;evaporation rate
-;(def evap-rate 0.99)
 (def evap-rate 0.99)
 
 (def animation-sleep-ms 100)
@@ -42,19 +43,21 @@
 (defn place [[x y]]
   (-> world (nth x) (nth y)))
 
-(defstruct ant :dir) ;may also have :food
+(defstruct ant :dir :team) ;may also have :food
 
 (defn create-ant 
   "create an ant at the location, returning an ant agent on the location"
-  [loc dir]
+  [loc dir team]
   (sync nil
     (let [p (place loc)
-      a (struct ant dir)]
+      a (struct ant dir team)]
       (alter p assoc :ant a)
       (agent loc))))
 
-(def home-off (/ dim 4))
-(def home-range (range home-off (+ nants-sqrt home-off)))
+(def green-home-off (/ dim 4))
+(def green-home-range (range green-home-off (+ nants-green-sqrt green-home-off)))
+(def blue-home-off (* green-home-off 3))
+(def blue-home-range (range blue-home-off (+ nants-blue-sqrt blue-home-off)))
 
 (defn setup 
   "places initial food and ants, returns seq of ant agents"
@@ -63,12 +66,21 @@
     (dotimes [i food-places]
       (let [p (place [(rand-int dim) (rand-int dim)])]
         (alter p assoc :food (rand-int food-range))))
-    (doall
-     (for [x home-range y home-range]
-       (do
-         (alter (place [x y]) 
-          assoc :home true)
-         (create-ant [x y] (rand-int 8)))))))
+    (def green-ants 
+      (doall
+      (for [x green-home-range y green-home-range]
+        (do
+          (alter (place [x y]) 
+            assoc :home true)
+          (create-ant [x y] (rand-int 8) "green")))))
+    (def blue-ants 
+      (doall
+        (for [x blue-home-range y blue-home-range]
+          (do
+            (alter (place [x y])
+              assoc :home true)
+            (create-ant [x y] (rand-int 8) "blue"))))))
+  (lazy-cat green-ants blue-ants))
 
 (defn bound 
   "returns n wrapped into range 0-b"
@@ -276,9 +288,13 @@
    (for [x (range dim) y (range dim)]
      (render-place bg (v (+ (* x dim) y)) x y)))
   (doto bg
+    (.setColor (. Color green))
+    (.drawRect (* scale green-home-off) (* scale green-home-off) 
+     (* scale nants-green-sqrt) (* scale nants-green-sqrt)))
+  (doto bg
     (.setColor (. Color blue))
-    (.drawRect (* scale home-off) (* scale home-off) 
-     (* scale nants-sqrt) (* scale nants-sqrt)))
+    (.drawRect (* scale blue-home-off) (* scale blue-home-off)
+      (* scale nants-blue-sqrt) (* scale nants-blue-sqrt)))
   (. g (drawImage img 0 0 nil))
   (. bg (dispose))))
 
@@ -313,6 +329,7 @@
 ;demo
 ;; (load-file "/Users/rich/dev/clojure/ants.clj")
 (def ants (setup))
+(println "Completed setup")
 (send-off animator animation)
 (dorun (map #(send-off % behave) ants))
 (send-off evaporator evaporation)
