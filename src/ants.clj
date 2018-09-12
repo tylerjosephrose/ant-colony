@@ -30,7 +30,7 @@
 
 (def running true)
 
-(defstruct cell :food :pher) ;may also have :ant and :home
+(defstruct cell :food :pher/green :pher/blue) ;may also have :ant and :home
 
 ;world is a 2d vector of refs to cells
 (def world 
@@ -140,17 +140,20 @@
   transaction that has verified the way is clear"
   [loc]
   (let [oldp (place loc)
-   ant (:ant @oldp)
-   newloc (delta-loc loc (:dir ant))
-   p (place newloc)]
-         ;move the ant
-         (alter p assoc :ant ant)
-         (alter oldp dissoc :ant)
-         ;leave pheromone trail
-         (when-not (:home @oldp)
-          ;lets leave a stronger pheramone trail once we have food
-          (if (:food ant) (alter oldp assoc :pher (+ (:pher @oldp) 7)) (alter oldp assoc :pher (+ (:pher @oldp) 1))))
-         newloc))
+    ant (:ant @oldp)
+    newloc (delta-loc loc (:dir ant))
+    p (place newloc)
+    pher (keyword "pher" (:team ant))]
+      ;move the ant
+      (alter p assoc :ant ant)
+      (alter oldp dissoc :ant)
+      ;leave pheromone trail
+      (when-not (:home @oldp)
+        ;lets leave a stronger pheramone trail once we have food
+        (if (:food ant) 
+          (alter oldp assoc pher (+ (pher @oldp) 7)) 
+          (alter oldp assoc pher (+ (pher @oldp) 1))))
+      newloc))
 
 (defn take-food [loc]
   "Takes one food from current location. Must be called in a
@@ -187,7 +190,8 @@
     ahead (place (delta-loc loc (:dir ant)))
     ahead-left (place (delta-loc loc (dec (:dir ant))))
     ahead-right (place (delta-loc loc (inc (:dir ant))))
-    places [ahead ahead-left ahead-right]]
+    places [ahead ahead-left ahead-right]
+    pher (keyword "pher" (:team ant))]
     (. Thread (sleep ant-sleep-ms))
     (dosync
      (when running
@@ -202,7 +206,7 @@
         :else
         (let [ranks (merge-with + 
           (rank-by (comp #(if (:home %) 1 0) deref) places)
-          (rank-by (comp :pher deref) places))]
+          (rank-by (comp pher deref) places))]
         (([move #(turn % -1) #(turn % 1)]
           (wrand [(if (:ant @ahead) 0 (ranks ahead)) 
             (ranks ahead-left) (ranks ahead-right)]))
@@ -216,7 +220,7 @@
         :else
         (let [ranks (merge-with + 
           (rank-by (comp :food deref) places)
-          (rank-by (comp :pher deref) places))]
+          (rank-by (comp pher deref) places))]
         (([move #(turn % -1) #(turn % 1)]
           (wrand [(if (:ant @ahead) 0 (ranks ahead)) 
             (ranks ahead-left) (ranks ahead-right)]))
@@ -229,7 +233,8 @@
    (for [x (range dim) y (range dim)]
      (dosync 
       (let [p (place [x y])]
-        (alter p assoc :pher (* evap-rate (:pher @p))))))))
+        (alter p assoc :pher/blue (* evap-rate (:pher/blue @p)))
+        (alter p assoc :pher/green (* evap-rate (:pher/green @p))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; UI ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (import 
@@ -266,9 +271,12 @@
         (+ tx (* x scale)) (+ ty (* y scale))))))
 
 (defn render-place [g p x y]
-  (when (pos? (:pher p))
+  (when (pos? (:pher/green p))
     (fill-cell g x y (new Color 0 255 0 
-      (int (min 255 (* 255 (/ (:pher p) pher-scale)))))))
+      (int (min 255 (* 255 (/ (:pher/green p) pher-scale)))))))
+  (when (pos? (:pher/blue p))
+    (fill-cell g x y (new Color 0 0 255
+      (int (min 255 (* 255 (/ (:pher/blue p) pher-scale)))))))
   (when (pos? (:food p))
     (fill-cell g x y (new Color 255 0 0 
       (int (min 255 (* 255 (/ (:food p) food-scale)))))))
