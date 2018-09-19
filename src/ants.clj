@@ -1,7 +1,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Ant sim ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;   Copyright (c) Rich Hickey. All rights reserved.
 ;   The use and distribution terms for this software are covered by the
-;   Common Public License 1.0 (http://opensource.org/licenses/cpl.php)
+;   Common Public License 1.0 (http://opeàsource.org/licenses/cpl.php)
 ;   which can be found in the file CPL.TXT at the root of this distribution.
 ;   By using this software in any fashion, you are agreeing to be bound by
 ;   the terms of this license.
@@ -11,8 +11,12 @@
 (def dim 80)
 ;number of ants = nants-sqrt^2
 (def nants-green-sqrt 7)
+;aggression level of green ants 0 is food oriented 1 is war oriented
+(def aggression-green)
 ;number of blue ants
 (def nants-blue-sqrt 7)
+;aggression level of blue ants 0 is food oriented 1 is war oriented
+(def aggression-blue)
 ;number of places with food
 (def food-places 35)
 ;range of amount of food at a place
@@ -22,7 +26,7 @@
 ;scale factor for food drawing
 (def food-scale 30.0)
 ;evaporation rate
-(def evap-rate 0.99)
+(def evap-rate 0.90)
 
 (def animation-sleep-ms 100)
 (def ant-sleep-ms 40)
@@ -30,13 +34,13 @@
 
 (def running true)
 
-(defstruct cell :food :pher/green :pher/blue) ;may also have :ant and :home
+(defstruct cell :food :pher/green :pher/blue :pher/war) ;may also have :ant and :home
 
 ;world is a 2d vector of refs to cells
 (def world 
  (apply vector 
   (map (fn [_] 
-   (apply vector (map (fn [_] (ref (struct cell 0 0))) 
+   (apply vector (map (fn [_] (ref (struct cell 0 0 0 0))) 
     (range dim)))) 
   (range dim))))
 
@@ -199,16 +203,19 @@
      (if (:food ant)
        ;going home
        (cond 
+        ;drop food and turn around if at home
         (:home @p)                              
         (-> loc drop-food (turn 4))
-        (and (:home @ahead) (not (:ant @ahead))) 
+        ;if there is not a friendly ant ahead and we are at home, go there (may attack)
+        (and (not= (:team ant) (:team :ant @ahead)) (:home) (= nil (:food ant)))
         (move loc)
         :else
+        ;TODO change this ranks thing to include if there's an enemy ant and aggression level
         (let [ranks (merge-with + 
           (rank-by (comp #(if (:home %) 1 0) deref) places)
           (rank-by (comp pher deref) places))]
         (([move #(turn % -1) #(turn % 1)]
-          (wrand [(if (:ant @ahead) 0 (ranks ahead)) 
+          (wrand [(if (= (:team ant) (:team :ant @ahead)) 0 (ranks ahead)) 
             (ranks ahead-left) (ranks ahead-right)]))
         loc)))
        ;foraging
@@ -218,6 +225,7 @@
         (and (pos? (:food @ahead)) (not (:home @ahead)) (not (:ant @ahead)))
         (move loc)
         :else
+        ;TODO same as above
         (let [ranks (merge-with + 
           (rank-by (comp :food deref) places)
           (rank-by (comp pher deref) places))]
@@ -234,7 +242,8 @@
      (dosync 
       (let [p (place [x y])]
         (alter p assoc :pher/blue (* evap-rate (:pher/blue @p)))
-        (alter p assoc :pher/green (* evap-rate (:pher/green @p))))))))
+        (alter p assoc :pher/green (* evap-rate (:pher/green @p)))
+        (alter p assoc :pher/war (* evap-rate (:pher/war @p))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; UI ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (import 
@@ -243,7 +252,7 @@
  '(javax.swing JPanel JFrame))
 
 ;pixels per world cell
-(def scale 20)
+(def scale 5)
 
 (defn fill-cell [#^Graphics g x y c]
   (doto g
@@ -277,8 +286,11 @@
   (when (pos? (:pher/blue p))
     (fill-cell g x y (new Color 0 0 255
       (int (min 255 (* 255 (/ (:pher/blue p) pher-scale)))))))
+  (when (pos? (:pher/war p))
+    (fill-cell g x y (new Color 255 0 0
+      (int (min 255 (* 255 (/ (:pher/war p) pher-scale)))))))
   (when (pos? (:food p))
-    (fill-cell g x y (new Color 255 0 0 
+    (fill-cell g x y (new Color 0 0 0 
       (int (min 255 (* 255 (/ (:food p) food-scale)))))))
   (when (:ant p)
     (render-ant (:ant p) g x y)))
@@ -337,7 +349,6 @@
 ;demo
 ;; (load-file "/Users/rich/dev/clojure/ants.clj")
 (def ants (setup))
-(println "Completed setup")
 (send-off animator animation)
 (dorun (map #(send-off % behave) ants))
 (send-off evaporator evaporation)
