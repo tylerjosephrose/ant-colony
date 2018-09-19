@@ -11,8 +11,12 @@
 (def dim 80)
 ;number of ants = nants-sqrt^2
 (def nants-green-sqrt 7)
+;green ants aggression level
+(def aggression-green 0.9)
 ;number of blue ants
 (def nants-blue-sqrt 7)
+;blue ants aggression level
+(def aggression-blue 0.2)
 ;number of places with food
 (def food-places 35)
 ;range of amount of food at a place
@@ -22,7 +26,8 @@
 ;scale factor for food drawing
 (def food-scale 30.0)
 ;evaporation rate
-(def evap-rate 0.99)
+(def evap-rate 0.90)
+
 (def animation-sleep-ms 100)
 (def ant-sleep-ms 40)
 (def evap-sleep-ms 1000)
@@ -188,6 +193,19 @@
   (println (:team a))
   (println (:team b)))
 
+(defn get-pher-reaction-green
+  "returns a value of the pull towards a place given the aggression
+  and the pheromone values of each team there for the green team"
+  [place]
+  (let [food-draw (- 1.0 aggression-green)]
+    (+ (* food-draw (:pher/green @place)) (* aggression-green (:pher/blue @place)))))
+
+(defn get-pher-reaction-green
+  "returns a value of the pull towards a place given the aggression
+  and the pheromone values of each team there for the blue team"
+  [place]
+  (let [food-draw (- 1.0 aggression-blue)]
+    (+ (* food-draw (:pher/blue @place)) (* aggression-blue (:pher/green @place)))))
 
 (defn behave 
   "the main function for the ant agent"
@@ -198,7 +216,8 @@
     ahead-left (place (delta-loc loc (dec (:dir ant))))
     ahead-right (place (delta-loc loc (inc (:dir ant))))
     places [ahead ahead-left ahead-right]
-    pher (keyword "pher" (:team ant))]
+    pher (keyword "pher" (:team ant))
+    function (if (= (:team ant) "blue") get-pher-reaction-green get-pher-reaction-green)]
     (. Thread (sleep ant-sleep-ms))
     (dosync
      (when running
@@ -230,7 +249,8 @@
         :else
         (let [ranks (merge-with + 
           (rank-by (comp :food deref) places)
-          (rank-by (comp pher deref) places))]
+          (rank-by (comp pher deref) places)
+          (rank-by function places))]
         (([move #(turn % -1) #(turn % 1)]
           (wrand [(if (:ant @ahead) 0 (ranks ahead)) 
             (ranks ahead-left) (ranks ahead-right)]))
