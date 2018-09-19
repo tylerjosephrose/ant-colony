@@ -23,7 +23,6 @@
 (def food-scale 30.0)
 ;evaporation rate
 (def evap-rate 0.99)
-
 (def animation-sleep-ms 100)
 (def ant-sleep-ms 40)
 (def evap-sleep-ms 1000)
@@ -182,6 +181,14 @@
     (reduce (fn [ret i] (assoc ret (nth sorted i) (inc i)))
       {} (range (count sorted)))))
 
+(defn battle
+  "picks a random ant to 'kill'"
+  [a b]
+  (println "Battle and the winner stays")
+  (println (:team a))
+  (println (:team b)))
+
+
 (defn behave 
   "the main function for the ant agent"
   [loc]
@@ -213,10 +220,13 @@
         loc)))
        ;foraging
        (cond 
-        (and (pos? (:food @p)) (not (:home @p))) 
+        (and (pos? (:food @p)) (not (:home @p)))
         (-> loc take-food (turn 4))
         (and (pos? (:food @ahead)) (not (:home @ahead)) (not (:ant @ahead)))
         (move loc)
+        ; Check if there is an enemy ant ahead. If so, start battle
+        (and (:ant @ahead) (not= (:team (:ant @ahead)) (:team ant)))
+        (battle (:ant @ahead) ant)
         :else
         (let [ranks (merge-with + 
           (rank-by (comp :food deref) places)
@@ -235,6 +245,7 @@
       (let [p (place [x y])]
         (alter p assoc :pher/blue (* evap-rate (:pher/blue @p)))
         (alter p assoc :pher/green (* evap-rate (:pher/green @p))))))))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; UI ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (import 
@@ -266,7 +277,9 @@
     (doto g
       (.setColor (if (:food ant) 
         (new Color 255 0 0 255) 
-        (new Color 0 0 0 255)))
+        (if (= (:team ant) "blue")
+        (new Color 0 0 255 255)
+        (new Color 0 255 0 255))))
       (.drawLine (+ hx (* x scale)) (+ hy (* y scale)) 
         (+ tx (* x scale)) (+ ty (* y scale))))))
 
