@@ -36,7 +36,7 @@
 (def world 
  (apply vector 
   (map (fn [_] 
-   (apply vector (map (fn [_] (ref (struct cell 0 0))) 
+   (apply vector (map (fn [_] (ref (struct cell 0 0 0))) 
     (range dim)))) 
   (range dim))))
 
@@ -243,7 +243,7 @@
  '(javax.swing JPanel JFrame))
 
 ;pixels per world cell
-(def scale 20)
+(def scale 5)
 
 (defn fill-cell [#^Graphics g x y c]
   (doto g
