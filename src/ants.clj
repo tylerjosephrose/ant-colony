@@ -12,11 +12,11 @@
 ;number of ants = nants-sqrt^2
 (def nants-green-sqrt 7)
 ;green ants aggression level
-(def aggression-green 0.9)
+(def aggression-green 0.2)
 ;number of blue ants
 (def nants-blue-sqrt 7)
 ;blue ants aggression level
-(def aggression-blue 0.2)
+(def aggression-blue 0.9)
 ;number of places with food
 (def food-places 35)
 ;range of amount of food at a place
@@ -197,16 +197,22 @@
     ant-two (:ant @current)]
     (if (> (rand) 0.5)
       ; ant-one wins 
-      ( (if ( = (:team ant-one) "blue")
-          (inc blue-score)
-          (inc green-score))
-        (alter current dissoc :ant))
+      ( (alter current dissoc :ant)
+        (if ( = (:team ant-one) "blue")
+          ((alter score assoc :blue (inc (:blue @score)))
+           (alter score assoc :blue (inc (:blue @score))))
+          ((alter score assoc :green (inc (:green @score)))
+           (alter score assoc :green (inc (:green @score)))))
+        (println score))
       ; ant-two wins
-      ( (if ( = (:team ant-two) "blue")
-          (inc blue-score)
-          (inc green-score))
-        (alter ahead dissoc :ant)
-        (move loc)))))
+      ( (alter ahead dissoc :ant)
+        (move loc)
+        (if ( = (:team ant-two) "blue")
+          ((alter score assoc :blue (inc (:blue @score)))
+           (alter score assoc :blue (inc (:blue @score))))
+          ((alter score assoc :green (inc (:green @score)))
+           (alter score assoc :green (inc (:green @score))))))))
+        (println score))
 
 (defn get-pher-reaction-green
   "returns a value of the pull towards a place given the aggression
@@ -375,7 +381,7 @@
     (send-off *agent* #'animation))
   (. panel (repaint))
   (. Thread (sleep animation-sleep-ms))
-  (println score)
+  ; (println score)
   nil)
 
 (def evaporator (agent nil))

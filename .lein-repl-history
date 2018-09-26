@@ -1,0 +1,64 @@
+(+ 1 2 3 4)
+(load-file "src/ants.clj")
+(load-file "src/ants.clj"
+)
+(load-file "src/ants.clj")
+quit
+(load-file "src/ants.clj")
+quit
+(load-file "src/ants.clj")
+quit
+(load-file "src/ants.clj")
+quit
+(load-file "src/ants.clj")
+quit
+(load-file "src/ants.clj")
+quit
+(load-file "src/ants.clj")
+quit
+(load-file "src/ants.clj")
+doc behavior
+doc behave
+(load-file "src/ants.clj")
+doc doc behave
+doc behave
+(load-file "src/ants.clj")
+quit
+(load-file "src/ants.clj")
+quit
+stop
+(load-file "src/ants.clj")
+(and (pos? (:food @ahead)) (not (:home @ahead)) (not (= (:team :ant @ahead) (:team ant))))
+sto
+stop
+(load-file "src/ants.clj")
+quit
+(load-file "src/ants.clj")
+quit
+(load-file "src/ants.clj")
+quit
+(load-file "src/ants.clj")
+(var score 0)
+(def score 0)
+(+ score 1)
+(def score (+ score 1))
+(+ score 1)
+(def score (+ score 1))
+(+ score 1)
+(def score (+ score 1))
+(+ score 1)
+(def score (+ score 1))
+(+ score 1)
+(load-file "src/ants.clj")
+quit
+(load-file "src/ants.clj")
+quit
+(load-file "src/ants.clj")
+quit
+(load-file "src/ants.clj")
+qtui
+quit
+(load-file "src/ants.clj")
+quit
+(load-file "src/ants.clj")
+quit
