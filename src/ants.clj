@@ -35,6 +35,7 @@
 (def running true)
 
 (defstruct cell :food :pher/green :pher/blue) ;may also have :ant and :home
+(defstruct score :blue :green)
 
 ;world is a 2d vector of refs to cells
 (def world 
@@ -75,6 +76,8 @@
         (do
           (alter (place [x y]) 
             assoc :home true)
+          (alter (place [x y])
+            assoc :team "green")
           (create-ant [x y] (rand-int 8) "green")))))
     (def blue-ants 
       (doall
@@ -82,6 +85,8 @@
           (do
             (alter (place [x y])
               assoc :home true)
+            (alter (place [x y])
+              assoc :team "blue")
             (create-ant [x y] (rand-int 8) "blue"))))))
   (lazy-cat green-ants blue-ants))
 
@@ -274,7 +279,13 @@
      (dosync 
       (let [p (place [x y])]
         (alter p assoc :pher/blue (* evap-rate (:pher/blue @p)))
-        (alter p assoc :pher/green (* evap-rate (:pher/green @p))))))))
+        (alter p assoc :pher/green (* evap-rate (:pher/green @p)))
+        ;do some fancy food shit to make ants
+        (if (and (:home @p) (> (:food @p) 0))
+          ((alter p assoc :food (dec (:food @p)))
+            (send-off (create-ant [x y] (rand-int 8) (:team @p)) behave)
+            (alter score assoc (keyword (:team @p)) (inc ((keyword (:team @p)) @score))))
+          nil ))))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; UI ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -364,6 +375,7 @@
     (send-off *agent* #'animation))
   (. panel (repaint))
   (. Thread (sleep animation-sleep-ms))
+  (println score)
   nil)
 
 (def evaporator (agent nil))
@@ -380,7 +392,7 @@
 ;demo
 ;; (load-file "/Users/rich/dev/clojure/ants.clj")
 (def ants (setup))
-(println "Completed setup")
+(def score (ref (struct score 0 0)))
 (send-off animator animation)
 (dorun (map #(send-off % behave) ants))
 (send-off evaporator evaporation)
