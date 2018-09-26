@@ -8,7 +8,7 @@
 ;   You must not remove this notice, or any other, from this software.
 
 ;dimensions of square world
-(def dim 50)
+(def dim 80)
 ;number of ants = nants-sqrt^2
 (def nants-green-sqrt 7)
 ;green ants aggression level
@@ -202,8 +202,7 @@
           ((alter score assoc :blue (inc (:blue @score)))
            (alter score assoc :blue (inc (:blue @score))))
           ((alter score assoc :green (inc (:green @score)))
-           (alter score assoc :green (inc (:green @score)))))
-        (println score))
+           (alter score assoc :green (inc (:green @score))))))
       ; ant-two wins
       ( (alter ahead dissoc :ant)
         (move loc)
@@ -211,8 +210,7 @@
           ((alter score assoc :blue (inc (:blue @score)))
            (alter score assoc :blue (inc (:blue @score))))
           ((alter score assoc :green (inc (:green @score)))
-           (alter score assoc :green (inc (:green @score))))))))
-        (println score))
+           (alter score assoc :green (inc (:green @score)))))))))
 
 (defn get-pher-reaction-green
   "returns a value of the pull towards a place given the aggression
@@ -301,7 +299,7 @@
  '(javax.swing JPanel JFrame))
 
 ;pixels per world cell
-(def scale 10)
+(def scale 5)
 
 (defn fill-cell [#^Graphics g x y c]
   (doto g
@@ -381,7 +379,7 @@
     (send-off *agent* #'animation))
   (. panel (repaint))
   (. Thread (sleep animation-sleep-ms))
-  ; (println score)
+  (println (str "Blue: " (:blue @score) "\tGreen: " (:green @score)))
   nil)
 
 (def evaporator (agent nil))
