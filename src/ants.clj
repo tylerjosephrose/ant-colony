@@ -219,7 +219,7 @@
   (let [food-draw (- 1.0 aggression-green)]
     (+ (* food-draw (:pher/green @place)) (* aggression-green (:pher/blue @place)))))
 
-(defn get-pher-reaction-green
+(defn get-pher-reaction-blue
   "returns a value of the pull towards a place given the aggression
   and the pheromone values of each team there for the blue team"
   [place]
@@ -284,7 +284,7 @@
       (let [p (place [x y])]
         (alter p assoc :pher/blue (* evap-rate (:pher/blue @p)))
         (alter p assoc :pher/green (* evap-rate (:pher/green @p)))
-        ;do some fancy food shit to make ants
+        ;do some fancy food stuff to make ants
         (if (and (:home @p) (> (:food @p) 0))
           ((alter p assoc :food (dec (:food @p)))
             (send-off (create-ant [x y] (rand-int 8) (:team @p)) behave)
