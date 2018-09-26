@@ -8,7 +8,7 @@
 ;   You must not remove this notice, or any other, from this software.
 
 ;dimensions of square world
-(def dim 80)
+(def dim 50)
 ;number of ants = nants-sqrt^2
 (def nants-green-sqrt 7)
 ;green ants aggression level
@@ -48,7 +48,6 @@
   (-> world (nth x) (nth y)))
 
 (defstruct ant :dir :team) ;may also have :food
-
 (defn create-ant 
   "create an ant at the location, returning an ant agent on the location"
   [loc dir team]
@@ -187,11 +186,22 @@
       {} (range (count sorted)))))
 
 (defn battle
-  "picks a random ant to 'kill'"
-  [a b]
-  (println "Battle and the winner stays")
-  (println (:team a))
-  (println (:team b)))
+  "Picks a random ant to 'kill'. The winner gets 2 points, the loser dies."
+  [ahead current loc]
+  (let [ant-one (:ant @ahead)
+    ant-two (:ant @current)]
+    (if (> (rand) 0.5)
+      ; ant-one wins 
+      ( (if ( = (:team ant-one) "blue")
+          (inc blue-score)
+          (inc green-score))
+        (alter current dissoc :ant))
+      ; ant-two wins
+      ( (if ( = (:team ant-two) "blue")
+          (inc blue-score)
+          (inc green-score))
+        (alter ahead dissoc :ant)
+        (move loc)))))
 
 (defn get-pher-reaction-green
   "returns a value of the pull towards a place given the aggression
@@ -245,7 +255,7 @@
         (move loc)
         ; Check if there is an enemy ant ahead. If so, start battle
         (and (:ant @ahead) (not= (:team (:ant @ahead)) (:team ant)))
-        (battle (:ant @ahead) ant)
+        (battle ahead p loc)
         :else
         (let [ranks (merge-with + 
           (rank-by (comp :food deref) places)
@@ -274,7 +284,7 @@
  '(javax.swing JPanel JFrame))
 
 ;pixels per world cell
-(def scale 5)
+(def scale 10)
 
 (defn fill-cell [#^Graphics g x y c]
   (doto g
